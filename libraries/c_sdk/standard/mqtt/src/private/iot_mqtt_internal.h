@@ -261,7 +261,7 @@ typedef struct _mqttConnection
     #if IOT_MQTT_ENABLE_SERIALIZER_OVERRIDES == 1
         const IotMqttSerializer_t * pSerializer; /**< @brief MQTT packet serializer overrides. */
     #endif
-
+    bool connecting;
     bool disconnected;                           /**< @brief Tracks if this connection has been disconnected. */
     IotMutex_t referencesMutex;                  /**< @brief Recursive mutex. Grants access to connection state and operation lists. */
     int32_t references;                          /**< @brief Counts callbacks and operations using this connection. */

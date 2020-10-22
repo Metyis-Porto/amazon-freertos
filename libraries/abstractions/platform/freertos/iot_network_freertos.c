@@ -207,12 +207,11 @@ static void _networkReceiveTask( void * pArgument )
     {
         if( pNetworkConnection->closeCallback != NULL )
         {
-            pNetworkConnection->closeCallback( pNetworkConnection,
-                                        IOT_NETWORK_UNKNOWN_CLOSED,
-                                        pNetworkConnection->pCloseContext );
+            pNetworkConnection->closeCallback(  pNetworkConnection,
+                                                IOT_NETWORK_UNKNOWN_CLOSED,
+                                                pNetworkConnection->pCloseContext);
         }
     }
-
 
     vTaskDelete( NULL );
 }
