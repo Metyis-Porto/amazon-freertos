@@ -176,6 +176,23 @@ void IotMqtt_ReceiveCallback( void * pNetworkConnection,
 /* @[declare_mqtt_receivecallback] */
 
 /**
+ * @brief Network close callback for the MQTT library.
+ *
+ * This function should be called by the system whenever when a close occurs.
+ *
+ * @param[in] pNetworkConnection The network connection associated with the MQTT
+ * connection, passed by the network stack.
+ * @param[in] reason The reason of the closure.
+ * @param[in] pCloseContext A pointer to the MQTT connection handle for which
+ * the connection is closed.
+ */
+/* @[declare_mqtt_closecallback] */
+void IotMqtt_CloseCallback( void * pNetworkConnection,
+                            IotNetworkCloseReason_t reason,
+                            void * pCloseContext );
+/* @[declare_mqtt_closecallback] */
+
+/**
  * @brief Establish a new MQTT connection.
  *
  * This function opens a connection between a new MQTT client and an MQTT server

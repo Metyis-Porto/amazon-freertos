@@ -807,7 +807,7 @@ void _IotMqtt_CloseNetworkConnection( IotMqttDisconnectReason_t disconnectReason
     IotMutex_Lock( &( pMqttConnection->referencesMutex ) );
     pMqttConnection->disconnected = true;
     pMqttConnection->keepAliveFailure = true;
-
+    
     if( pMqttConnection->keepAliveMs != 0 )
     {
         /* Keep-alive must have a PINGREQ allocated. */
@@ -948,6 +948,25 @@ void IotMqtt_ReceiveCallback( void * pNetworkConnection,
     {
         EMPTY_ELSE_MARKER;
     }
+}
+
+/*-----------------------------------------------------------*/
+
+void IotMqtt_CloseCallback( void * pNetworkConnection,
+                            IotNetworkCloseReason_t reason,
+                            void * pCloseContext )
+{
+    IotMqttError_t status = IOT_MQTT_SUCCESS;
+
+    /* Cast context to correct type. */
+    _mqttConnection_t * pMqttConnection = ( _mqttConnection_t * ) pCloseContext;
+
+    IotLogError( "(MQTT connection %p) Close Callback closing with reason: %d",
+                                            pNetworkConnection,
+                                            reason);
+
+    _IotMqtt_CloseNetworkConnection( IOT_MQTT_BAD_PACKET_RECEIVED,
+                                     pMqttConnection );
 }
 
 /*-----------------------------------------------------------*/

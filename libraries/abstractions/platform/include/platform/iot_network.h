@@ -50,6 +50,19 @@ typedef enum IotNetworkError
 } IotNetworkError_t;
 
 /**
+ * @ingroup platform_datatypes_enums
+ * @brief Disconnect reasons for [the network close callback](@ref platform_network_function_closecallback).
+ */
+typedef enum IotNetworkCloseReason
+{
+    IOT_NETWORK_NOT_CLOSED = 0,    /**< Not closed, still open */
+    IOT_NETWORK_SERVER_CLOSED,     /**< Server closed connection. */
+    IOT_NETWORK_TRANSPORT_FAILURE, /**< Transport failed. */
+    IOT_NETWORK_CLIENT_CLOSED,     /**< Client closed connection. */
+    IOT_NETWORK_UNKNOWN_CLOSED     /**< Unknown close reason. */
+} IotNetworkCloseReason_t;
+
+/**
  * @page platform_network_functions Networking
  * @brief Functions of the network abstraction component.
  *
@@ -122,6 +135,23 @@ typedef void ( * IotNetworkReceiveCallback_t )( void * pConnection,
 /* @[declare_platform_network_receivecallback] */
 
 /**
+ * @brief Provide an asynchronous notification of network closing
+ *
+ * A function with this signature may be set with @ref platform_network_function_setclosecallback
+ * to be invoked when the network connection is closed.
+ *
+ * @param[in] pConnection The connection that was closed, defined by
+ * the network stack.
+ * @param[in] reason The reason the connection was closed
+ * @param[in] pContext The third argument passed to @ref platform_network_function_setclosecallback.
+ */
+/* @[declare_platform_network_closecallback] */
+typedef void ( * IotNetworkCloseCallback_t )( void * pConnection,
+                                              IotNetworkCloseReason_t reason,
+                                              void * pContext );
+/* @[declare_platform_network_closecallback] */
+
+/**
  * @ingroup platform_datatypes_paramstructs
  * @brief Represents the functions of a network stack.
  *
@@ -174,6 +204,31 @@ typedef struct IotNetworkInterface
                                                 IotNetworkReceiveCallback_t receiveCallback,
                                                 void * pContext );
     /* @[declare_platform_network_setreceivecallback] */
+
+    /**
+     * @brief Register an @ref platform_network_function_closecallback.
+     *
+     * Sets an @ref platform_network_function_closecallback to be called
+     * asynchronously when the network connection closes. The network stack
+     * should invoke this function "as if" it were the thread routine of a
+     * detached thread.
+     *
+     * Each network connection may only have one close callback at any time.
+     * @ref platform_network_function_close is expected to remove any active
+     * close callbacks.
+     *
+     * @param[in] pConnection The connection to associate with the close callback.
+     * @param[in] closeCallback The function to invoke for incoming network close events.
+     * @param[in] pContext A value to pass as the first parameter to the close callback.
+     *
+     * @return Any #IotNetworkError_t, as defined by the network stack.
+     *
+     * @see platform_network_function_closecallback
+     */
+    /* @[declare_platform_network_setclosecallback] */
+    IotNetworkError_t ( * setCloseCallback )( void * pConnection,
+                                              IotNetworkCloseCallback_t closeCallback,
+                                              void * pContext );
 
     /**
      * @brief Send data over a return connection.

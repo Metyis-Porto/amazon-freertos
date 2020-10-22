@@ -136,6 +136,14 @@ IotNetworkError_t IotNetworkAfr_SetReceiveCallback( void * pConnection,
                                                     void * pContext );
 
 /**
+ * @brief An implementation of #IotNetworkInterface_t::setCloseCallback for
+ * FreeRTOS Secure Sockets.
+ */
+IotNetworkError_t IotNetworkAfr_SetCloseCallback( void * pConnection,
+                                                  IotNetworkCloseCallback_t closeCallback,
+                                                  void * pContext );
+
+/**
  * @brief An implementation of #IotNetworkInterface_t::send for FreeRTOS
  * Secure Sockets.
  */

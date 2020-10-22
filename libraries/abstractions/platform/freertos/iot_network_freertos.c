@@ -90,7 +90,9 @@ typedef struct _networkConnection
     StaticEventGroup_t connectionFlags;          /**< @brief Synchronizes with the receive task. */
     TaskHandle_t receiveTask;                    /**< @brief Handle of the receive task, if any. */
     IotNetworkReceiveCallback_t receiveCallback; /**< @brief Network receive callback, if any. */
+    IotNetworkCloseCallback_t closeCallback;     /**< @brief Network close callback, if any. */
     void * pReceiveContext;                      /**< @brief The context for the receive callback. */
+    void * pCloseContext;                        /**< @brief The context for the close callback. */
     bool bufferedByteValid;                      /**< @brief Used to determine if the buffered byte is valid. */
     uint8_t bufferedByte;                        /**< @brief A single byte buffered from a receive, since AFR Secure Sockets does not have poll(). */
 } _networkConnection_t;
@@ -104,6 +106,7 @@ const IotNetworkInterface_t IotNetworkAfr =
 {
     .create             = IotNetworkAfr_Create,
     .setReceiveCallback = IotNetworkAfr_SetReceiveCallback,
+    .setCloseCallback   = IotNetworkAfr_SetCloseCallback,
     .send               = IotNetworkAfr_Send,
     .receive            = IotNetworkAfr_Receive,
     .receiveUpto        = IotNetworkAfr_ReceiveUpto,
@@ -141,7 +144,7 @@ static void _destroyConnection( _networkConnection_t * pNetworkConnection )
  */
 static void _networkReceiveTask( void * pArgument )
 {
-    bool destroyConnection = false;
+    bool closedConnection = false;
     int32_t socketStatus = 0;
     EventBits_t connectionFlags = 0;
 
@@ -191,24 +194,25 @@ static void _networkReceiveTask( void * pArgument )
 
         if( ( connectionFlags & _FLAG_CONNECTION_DESTROYED ) == _FLAG_CONNECTION_DESTROYED )
         {
-            destroyConnection = true;
+            configPRINTF(("Triggering a network close\n"));
+            closedConnection = true;
             break;
         }
     }
 
-    IotLogDebug( "Network receive task terminating." );
-
+    configPRINTF(("Network receive task terminating.\n"));
+    
     /* If necessary, destroy the network connection before exiting. */
-    if( destroyConnection == true )
+    if( closedConnection != true )
     {
-        _destroyConnection( pNetworkConnection );
+        if( pNetworkConnection->closeCallback != NULL )
+        {
+            pNetworkConnection->closeCallback( pNetworkConnection,
+                                        IOT_NETWORK_UNKNOWN_CLOSED,
+                                        pNetworkConnection->pCloseContext );
+        }
     }
-    else
-    {
-        /* Set the flag to indicate that the receive task has exited. */
-        ( void ) xEventGroupSetBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
-                                     _FLAG_RECEIVE_TASK_EXITED );
-    }
+
 
     vTaskDelete( NULL );
 }
@@ -472,6 +476,29 @@ IotNetworkError_t IotNetworkAfr_SetReceiveCallback( void * pConnection,
 
 /*-----------------------------------------------------------*/
 
+IotNetworkError_t IotNetworkAfr_SetCloseCallback( void * pConnection,
+                                                  IotNetworkCloseCallback_t closeCallback,
+                                                  void * pContext )
+{
+    IotNetworkError_t status = IOT_NETWORK_BAD_PARAMETER;
+
+    /* Cast network connection to the correct type. */
+    _networkConnection_t * pNetworkConnection = ( _networkConnection_t * ) pConnection;
+
+    if( closeCallback != NULL )
+    {
+        /* Set the receive callback and context. */
+        pNetworkConnection->closeCallback = closeCallback;
+        pNetworkConnection->pCloseContext = pContext;
+
+        status = IOT_NETWORK_SUCCESS;
+    }
+
+    return status;
+}
+
+/*-----------------------------------------------------------*/
+
 size_t IotNetworkAfr_Send( void * pConnection,
                            const uint8_t * pMessage,
                            size_t messageLength )
@@ -655,27 +682,10 @@ IotNetworkError_t IotNetworkAfr_Destroy( void * pConnection )
     /* Cast network connection to the correct type. */
     _networkConnection_t * pNetworkConnection = ( _networkConnection_t * ) pConnection;
 
-    /* Check if this function is being called from the receive task. */
-    if( xTaskGetCurrentTaskHandle() == pNetworkConnection->receiveTask )
-    {
-        /* Set the flag specifying that the connection is destroyed. */
-        ( void ) xEventGroupSetBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
-                                     _FLAG_CONNECTION_DESTROYED );
-    }
-    else
-    {
-        /* If a receive task was created, wait for it to exit. */
-        if( pNetworkConnection->receiveTask != NULL )
-        {
-            ( void ) xEventGroupWaitBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
-                                          _FLAG_RECEIVE_TASK_EXITED,
-                                          pdTRUE,
-                                          pdTRUE,
-                                          portMAX_DELAY );
-        }
+    ( void ) xEventGroupSetBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
+                                 _FLAG_CONNECTION_DESTROYED );
 
-        _destroyConnection( pNetworkConnection );
-    }
+    _destroyConnection( pNetworkConnection );
 
     return IOT_NETWORK_SUCCESS;
 }
