@@ -1007,14 +1007,14 @@ IotMqttError_t IotMqtt_Connect( const IotMqttNetworkInfo_t * pNetworkInfo,
                                                 pNetworkInfo,
                                                 pConnectInfo->keepAliveSeconds );
 
-    pNewMqttConnection->connecting = true;
-
     if( pNewMqttConnection == NULL )
     {
         IOT_SET_AND_GOTO_CLEANUP( IOT_MQTT_NO_MEMORY );
     }
     else
     {
+        pNewMqttConnection->connecting = true;
+
         /* Set the network connection associated with the MQTT connection. */
         pNewMqttConnection->pNetworkConnection = pNetworkConnection;
         pNewMqttConnection->ownNetworkConnection = ownNetworkConnection;
@@ -1239,8 +1239,11 @@ IotMqttError_t IotMqtt_Connect( const IotMqttNetworkInfo_t * pNetworkInfo,
         *pMqttConnection = pNewMqttConnection;
     }
 
-    pNewMqttConnection->connecting = false;
-
+    if (pNewMqttConnection != NULL)
+    {
+        pNewMqttConnection->connecting = false;
+    }
+    
     IOT_FUNCTION_CLEANUP_END();
 }
 

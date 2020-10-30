@@ -170,6 +170,8 @@ static void _networkReceiveTask( void * pArgument )
 
             if( ( connectionFlags & _FLAG_SHUTDOWN ) == _FLAG_SHUTDOWN )
             {
+                configPRINTF(("Shutdown already\n"));
+                closedConnection = true;
                 socketStatus = SOCKETS_ECLOSED;
             }
 
@@ -194,7 +196,7 @@ static void _networkReceiveTask( void * pArgument )
 
         if( ( connectionFlags & _FLAG_CONNECTION_DESTROYED ) == _FLAG_CONNECTION_DESTROYED )
         {
-            configPRINTF(("Triggering a network close\n"));
+            configPRINTF(("Connection destroyed already\n"));
             closedConnection = true;
             break;
         }
@@ -212,6 +214,10 @@ static void _networkReceiveTask( void * pArgument )
                                                 pNetworkConnection->pCloseContext);
         }
     }
+
+    /* Set the flag to indicate that the receive task has exited. */
+    ( void ) xEventGroupSetBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
+                                    _FLAG_RECEIVE_TASK_EXITED );
 
     vTaskDelete( NULL );
 }
@@ -683,6 +689,20 @@ IotNetworkError_t IotNetworkAfr_Destroy( void * pConnection )
 
     ( void ) xEventGroupSetBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
                                  _FLAG_CONNECTION_DESTROYED );
+
+    /* Check if this function is being called from the receive task. */
+    if( xTaskGetCurrentTaskHandle() != pNetworkConnection->receiveTask )
+    {
+        /* If a receive task was created, wait for it to exit. */
+        if( pNetworkConnection->receiveTask != NULL )
+        {
+            ( void ) xEventGroupWaitBits( ( EventGroupHandle_t ) &( pNetworkConnection->connectionFlags ),
+                                          _FLAG_RECEIVE_TASK_EXITED,
+                                          pdTRUE,
+                                          pdTRUE,
+                                          portMAX_DELAY );
+        }
+    }
 
     _destroyConnection( pNetworkConnection );
 
