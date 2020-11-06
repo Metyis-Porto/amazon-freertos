@@ -30,6 +30,7 @@
 
 /* Standard includes. */
 #include "string.h"
+#include <stm32l4xx_hal.h>
 
 /* MQTT includes. */
 #include "iot_mqtt.h"
@@ -392,7 +393,8 @@ static void prvSendCallbackEvent( void * pvCallbackContext,
         }
         else
         {
-            OTA_LOG_L1( "Error: No OTA data buffers available.\r\n", OTA_DATA_BLOCK_SIZE );
+            OTA_LOG_L1( "Error: No OTA data buffers available, going to restart.\r\n", OTA_DATA_BLOCK_SIZE );
+            NVIC_SystemReset();
         }
     }
     else

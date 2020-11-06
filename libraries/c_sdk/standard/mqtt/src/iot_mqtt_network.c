@@ -938,11 +938,8 @@ void IotMqtt_ReceiveCallback( void * pNetworkConnection,
     /* Close the network connection on a bad response. */
     if( status == IOT_MQTT_BAD_RESPONSE )
     {
-        IotLogError( "(MQTT connection %p) Error processing incoming data. Closing connection.",
+        IotLogError( "(MQTT connection %p) Error processing incoming data. Connection needs to be closed.",
                      pMqttConnection );
-
-        _IotMqtt_CloseNetworkConnection( IOT_MQTT_BAD_PACKET_RECEIVED,
-                                         pMqttConnection );
     }
     else
     {
