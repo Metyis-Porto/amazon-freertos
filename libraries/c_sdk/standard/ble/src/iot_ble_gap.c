@@ -942,7 +942,11 @@ BTStatus_t IotBle_SetDeviceName( const char * pName,
              */
 
             status = _setDeviceProperty( eBTpropertyBdname, bleDeviceName, strlen( bleDeviceName ) );
-
+            
+            #if ( IOT_BLE_SET_CUSTOM_ADVERTISEMENT_MSG == 1 )
+                IotBle_SetCustomAdvCb( &_advParams, &_scanRespParams );
+            #endif
+            
             if( status == eBTStatusSuccess )
             {
                 status = _setAdvData( &_advParams );
