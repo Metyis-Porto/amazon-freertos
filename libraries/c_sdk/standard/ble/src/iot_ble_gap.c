@@ -941,8 +941,22 @@ BTStatus_t IotBle_SetDeviceName( const char * pName,
              * name change immediately in the advertisement.
              */
 
-            status = _setDeviceProperty( eBTpropertyBdname, bleDeviceName, strlen( bleDeviceName ) );
-            
+            /* Stop the advertisement to avoid new connections to the device since we may want to change
+             * the advertising mode.
+             *  */
+            status = IotBle_StopAdv( &_bleStopAdvCb );
+
+            if( status == eBTStatusSuccess )
+            {
+                IotSemaphore_Wait( &_BTInterface.callbackSemaphore );
+                status = _BTInterface.cbStatus;
+            }
+
+            if( status == eBTStatusSuccess )
+            {
+                status = _setDeviceProperty( eBTpropertyBdname, bleDeviceName, strlen( bleDeviceName ) );
+            }
+
             #if ( IOT_BLE_SET_CUSTOM_ADVERTISEMENT_MSG == 1 )
                 IotBle_SetCustomAdvCb( &_advParams, &_scanRespParams );
             #endif
@@ -955,6 +969,18 @@ BTStatus_t IotBle_SetDeviceName( const char * pName,
             if( status == eBTStatusSuccess )
             {
                 status = _setAdvData( &_scanRespParams );
+            }
+
+            /* Start advertisement. */
+            if( status == eBTStatusSuccess )
+            {
+                status = IotBle_StartAdv( &_bleStartAdvCb );
+
+                if( status == eBTStatusSuccess )
+                {
+                    IotSemaphore_Wait( &_BTInterface.callbackSemaphore );
+                    status = _BTInterface.cbStatus;
+                }
             }
         }
     }
