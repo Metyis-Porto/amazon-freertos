@@ -1076,6 +1076,7 @@ CK_DECLARE_FUNCTION( CK_RV, C_CloseSession )( CK_SESSION_HANDLE xSession )
         if( NULL != pxSession->xSignMutex )
         {
             vSemaphoreDelete( pxSession->xSignMutex );
+            pxSession->xSignMutex = NULL;
         }
 
         /* Free the public key context if it exists. */
@@ -1087,11 +1088,15 @@ CK_DECLARE_FUNCTION( CK_RV, C_CloseSession )( CK_SESSION_HANDLE xSession )
         if( NULL != pxSession->xVerifyMutex )
         {
             vSemaphoreDelete( pxSession->xVerifyMutex );
+            pxSession->xVerifyMutex = NULL;
         }
 
         mbedtls_sha256_free( &pxSession->xSHA256Context );
 
-        vPortFree( pxSession );
+        if( NULL != pxSession )
+        {
+            vPortFree( pxSession );
+        }
     }
     else
     {
